@@ -1,4 +1,4 @@
-from langchain_openai import OpenAIEmbeddings, ChatOpenAI
+from langchain_openai import OpenAIEmbeddings
 from langchain.chains import create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_core.prompts import (
@@ -11,7 +11,8 @@ from langchain_community.vectorstores import InMemoryVectorStore
 from langchain_community.document_loaders import (
     DirectoryLoader, TextLoader, PyPDFLoader, UnstructuredWordDocumentLoader
 )
-from configs import DOCS_PATH, EMBEDDING_MODEL, MODEL_NAME, TEMPERATURE, SYSTEM_PROMPT
+from configs import DOCS_PATH, EMBEDDING_MODEL, SYSTEM_PROMPT
+from llm import model
 
 
 def _load_documents():
@@ -38,13 +39,11 @@ def _get_vectorstore():
 _vectorstore = _get_vectorstore()
 _retriever = _vectorstore.as_retriever()
 
-_llm = ChatOpenAI(model=MODEL_NAME, temperature=TEMPERATURE)
-
 _prompt_template = ChatPromptTemplate.from_messages([
     SystemMessagePromptTemplate.from_template(SYSTEM_PROMPT + "\nRelevant information:\n{context}"),
     HumanMessagePromptTemplate.from_template("{input}")
 ])
 
-_question_answer_chain = create_stuff_documents_chain(_llm, _prompt_template)
+_question_answer_chain = create_stuff_documents_chain(model, _prompt_template)
 
 retrieval_chain = create_retrieval_chain(_retriever, _question_answer_chain)
