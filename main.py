@@ -1,4 +1,5 @@
 import asyncio
+from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
@@ -6,11 +7,21 @@ from langchain_core.messages import HumanMessage
 
 from graph import state_graph
 from log import logger
+from redis_vector_store import sync_documents
 
 
 load_dotenv()
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger.info("Starting up the application...")
+    await sync_documents()
+    yield
+    logger.info("Shutting down the application...")
+
+
+app = FastAPI(lifespan=lifespan)
 
 
 @app.websocket("/chat/{user_id}")
