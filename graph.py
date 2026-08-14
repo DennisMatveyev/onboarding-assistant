@@ -2,23 +2,21 @@ import os
 from datetime import datetime
 
 from langchain_core.messages import AIMessage
-from langgraph.checkpoint.redis import RedisSaver
+from langgraph.checkpoint.redis.aio import AsyncRedisSaver
 from langgraph.graph import START, END, MessagesState, StateGraph
 
 from redis_vector_store import llm_cache
 from rag import retrieval_chain
 
 
-def _create_graph() -> StateGraph:
+async def create_graph() -> StateGraph:
     graph = StateGraph(state_schema=MessagesState)
 
     graph.add_node("retrieval_chain_node", _call_retrieval_chain)
     graph.add_node("nearest_birthday_node", _get_nearest_birthday)
-    # graph.add_node("router_node", lambda state: state)
-    
-    # graph.add_edge(START, "router_node")
+
     graph.add_conditional_edges(
-        START, #"router_node",
+        START,
         _router,
         {
             "call_retrieval_chain": "retrieval_chain_node",
@@ -28,10 +26,8 @@ def _create_graph() -> StateGraph:
     graph.add_edge("retrieval_chain_node", END)
     graph.add_edge("nearest_birthday_node", END)
 
-    checkpointer = None
-    with RedisSaver.from_conn_string(os.getenv("REDIS_URL", "redis://localhost:6379")) as _checkpointer:
-        _checkpointer.setup()
-        checkpointer = _checkpointer
+    checkpointer = AsyncRedisSaver(redis_url=os.getenv("REDIS_URL", "redis://localhost:6379"))
+    await checkpointer.asetup()
 
     return graph.compile(checkpointer=checkpointer)
 
@@ -70,6 +66,3 @@ async def _call_retrieval_chain(state: MessagesState) -> dict:
     await llm_cache.astore(prompt=user_message, response=answer)
 
     return {"messages": [AIMessage(content=answer)]}
-
-
-state_graph = _create_graph()

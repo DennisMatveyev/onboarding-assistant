@@ -16,11 +16,19 @@ from configs import DOCS_PATH, EMBEDDING_MODEL
 from log import logger
 
 
+# requires HF_TOKEN, not free, but provides better quality 
+# vectorizer_model = "redis/langcache-embed-v2"
+
+# some free alternatives:
+# BAAI/bge-base-en-v1.5
+# intfloat/e5-large-v2
+vectorizer_model = "BAAI/bge-base-en-v1.5"
+
 llm_cache = SemanticCache(
     name="llm_cache_onboarding",
     redis_url=os.getenv("REDIS_URL", "redis://localhost:6379"),
-    distance_threshold=0.01,
-    vectorizer=HFTextVectorizer("redis/langcache-embed-v2"),
+    distance_threshold=0.1,   # 0.1 to 0.25 usually works well for semantic similarity
+    vectorizer=HFTextVectorizer(vectorizer_model),
 )
 
 schema = {

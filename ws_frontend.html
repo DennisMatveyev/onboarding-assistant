@@ -47,7 +47,7 @@
       <div class="card-body">
         <div class="row g-2 align-items-center">
           <div class="col">
-            <input id="userId" class="form-control" placeholder="User ID" value="1" />
+            <input id="sessionId" class="form-control" placeholder="Session ID (assigned on connect)" readonly />
           </div>
           <div class="col-auto">
             <button id="connectBtn" class="btn btn-primary" onclick="connect()">Connect</button>
@@ -66,24 +66,35 @@
 
   <script>
     let ws;
+    const SESSION_STORAGE_KEY = 'onboarding_thread_id';
 
     function connect() {
-      const userId = document.getElementById('userId').value.trim();
-      if (!userId) return;
-
       if (ws) ws.close();
 
-      ws = new WebSocket(`ws://127.0.0.1:8000/chat/${userId}`);
+      const storedThreadId = localStorage.getItem(SESSION_STORAGE_KEY);
+      const url = storedThreadId
+        ? `ws://127.0.0.1:8000/chat?thread_id=${encodeURIComponent(storedThreadId)}`
+        : 'ws://127.0.0.1:8000/chat';
+      ws = new WebSocket(url);
 
       ws.onopen = () => {
-        logSystem('Connected as "' + userId + '"');
         document.getElementById('connectBtn').textContent = 'Reconnect';
         document.getElementById('messageInput').disabled = false;
         document.getElementById('sendBtn').disabled = false;
         document.getElementById('messageInput').focus();
       };
 
-      ws.onmessage = (event) => logServer(event.data);
+      ws.onmessage = (event) => {
+        const sessionPrefix = '__session__:';
+        if (event.data.startsWith(sessionPrefix)) {
+          const threadId = event.data.slice(sessionPrefix.length);
+          localStorage.setItem(SESSION_STORAGE_KEY, threadId);
+          document.getElementById('sessionId').value = threadId;
+          logSystem('Connected (session: ' + threadId + ')');
+          return;
+        }
+        logServer(event.data);
+      };
 
       ws.onclose = () => {
         logSystem('Disconnected');
