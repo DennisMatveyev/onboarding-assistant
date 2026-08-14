@@ -29,7 +29,7 @@ ws_frontend.html  →  FastAPI WebSocket  →  LangGraph  →  LangChain RAG cha
 **1. Start Redis Stack**
 
 ```bash
-docker run -d --name redis_onboard_assist -p 6379:6379 redis:8.4
+docker run -d --name redis-stack -p 6379:6379 -p 8001:8001 redis/redis-stack:latest
 ```
 
 **2. Install dependencies**

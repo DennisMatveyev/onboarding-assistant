@@ -14,11 +14,11 @@ def _create_graph() -> StateGraph:
 
     graph.add_node("retrieval_chain_node", _call_retrieval_chain)
     graph.add_node("nearest_birthday_node", _get_nearest_birthday)
-    graph.add_node("router_node", lambda state: state)
+    # graph.add_node("router_node", lambda state: state)
     
-    graph.add_edge(START, "router_node")
+    # graph.add_edge(START, "router_node")
     graph.add_conditional_edges(
-        "router_node",
+        START, #"router_node",
         _router,
         {
             "call_retrieval_chain": "retrieval_chain_node",
